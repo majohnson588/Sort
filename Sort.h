@@ -10,3 +10,5 @@ void ShellSort(int* a, int n);
 void PrintArray(int* a, int n);
 void SelectionSort(int* a, int n);
 void Swap(int* p1, int* p2);
+void BubbleSort(int* a, int n);
+void QuickSort(int* a, int begin,int end);
