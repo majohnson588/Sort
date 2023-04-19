@@ -35,6 +35,20 @@ void TestQuickSort()
 	PrintArray(a, sizeof(a) / sizeof(int));
 }
 
+void TestMergeSort()
+{
+	int a[] = { 9,1,2,5,7,4,8,6,3,5 };
+	MergeSort(a, 0, sizeof(a) / sizeof(int) - 1);
+	PrintArray(a, sizeof(a) / sizeof(int));
+}
+
+void TestCountSort()
+{
+	int a[] = { 9,1,2,5,7,4,8,6,3,5 };
+	CountSort(a, 0, sizeof(a) / sizeof(int) - 1);
+	PrintArray(a, sizeof(a) / sizeof(int));
+}
+
 int main()
 {
 	//TestInsertionSort();
@@ -42,7 +56,10 @@ int main()
 	//TestOP();
 	//TestSelectionSort();
 	//TestBubbleSort();
-	TestQuickSort();
+	//TestQuickSort();
+	//TestMergeSort();
+	TestCountSort();
 
+	printf("%d", callCount);
 	return 0;
 }
