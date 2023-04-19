@@ -1,4 +1,7 @@
 #include "Sort.h"
+#include "Stack.h"
+
+int callCount = 0;
 
 void Swap(int* p1, int* p2)
 {
@@ -319,13 +322,16 @@ int PartSort3(int* a, int begin, int end)
 
 void QuickSort(int* a, int begin,int end)
 {
+	callCount++;
+
 	//区间不存在，或者只有一个值则不需要再处理
 	if (begin >= end)
 	{
 		return;
 	}
 
-	if (end - begin > 10)
+	//最后10个数留给InsertSort,极大减少递归深度（大概70%）
+	if (end - begin > 20)
 	{
 		//int keyi = PartSort1(a, begin, end);
         //int keyi = PartSort2(a, begin, end);
@@ -340,4 +346,242 @@ void QuickSort(int* a, int begin,int end)
 	}
 }
 
+//改非递归
+//递归最大的问题，极端场景下面，如果深度太深，会出现栈溢出
+//1、直接改循环 -- 比如斐波那契数列、归并排序
 
+//用栈实现
+void QuickSortNonR(int* a, int begin, int end)
+{
+	ST st;
+	StackInit(&st);
+	StackPush(&st, end);
+	StackPush(&st, begin);
+
+	while (!StackEmpty(&st))
+	{
+		int left = StackTop(&st);
+		StackPop(&st);
+
+		int right = StackTop(&st);
+		StackPop(&st);
+
+		int keyi = PartSort3(a, left, right);
+		// [left, keyi-1] keyi[keyi+1, right]
+
+		if (keyi + 1 < right)
+		{
+			StackPush(&st, right);
+			StackPush(&st, keyi + 1);
+		}
+
+		if (left < keyi - 1)
+		{
+			StackPush(&st, keyi - 1);
+			StackPush(&st, left);
+		}
+	}
+
+	StackDestroy(&st);
+}
+//使用队列模拟也可以，但是模拟的方式不一样，他是层序遍历
+//而栈是先左边深度遍历再走右边
+
+void _MergeSort(int* a, int begin, int end,int* tmp)
+{
+	if (begin >= end)
+		return;
+
+	int mid = (begin + end) / 2;
+
+	//[begin,mid] [mid+1,end] 分治递归，让子区间有序
+	_MergeSort(a, begin, mid, tmp);
+	_MergeSort(a, mid + 1, end, tmp);
+
+	//归并 [begin,mid] [mid+1,end]
+	int begin1 = begin, end1 = mid;
+	int begin2 = mid + 1, end2 = end;
+	int i = begin1;
+	while (begin1 <= end1 && begin2 <= end2)
+	{
+		if (a[begin1] < a[begin2])
+		{
+			tmp[i++] = a[begin1++];
+		}
+		else
+		{
+			tmp[i++] = a[begin2++];
+		}
+	}
+
+	while (begin1 <= end1)
+	{
+		tmp[i++] = a[begin1++];
+	}
+
+	while (begin2 <= end2)
+	{
+		tmp[i++] = a[begin2++];
+	}
+
+	//把归并数据拷贝回原数组
+	memcpy(a + begin, tmp + begin, (end - begin + 1) * sizeof(int));
+}
+
+//归并排序
+//时间复杂度O(N*logN)
+//空间复杂度O(N)
+
+//递归写法
+void MergeSort(int* a, int n)
+{
+	int* tmp = (int*)malloc(sizeof(int) * n);
+	if (tmp == NULL)
+	{
+		printf("malloc fail\n");
+		exit(-1);
+	}
+
+	_MergeSort(a, 0, n - 1, tmp);
+	free(tmp);
+
+	memcpy(a, tmp, sizeof(int) * n);
+
+	free(tmp);
+}
+
+//非递归写法
+void MergeSortNonR(int* a, int n)
+{
+	int* tmp = (int*)malloc(sizeof(int) * n);
+	if (tmp == NULL)
+	{
+		printf("malloc fail\n");
+		exit(-1);
+	}
+
+	//_MergeSort(a, 0, n - 1, tmp);
+    //free(tmp);
+	int gap = 1;
+	while (gap < n)
+	{
+		printf("gap=%d->", gap);
+		for (int i = 0; i < n; i += 2 * gap)
+		{
+			// [i,i+gap-1][i+gap, i+2*gap-1]
+			int begin1 = i, end1 = i + gap - 1;
+			int begin2 = i + gap, end2 = i + 2 * gap - 1;
+
+			// 思路1；end1越界或者begin2越界，则可以不归并了
+			if (end1 >= n || begin2 >= n)
+			{
+				break;
+			}
+			else if (end2 >= n)
+			{
+				end2 = n - 1;
+			}
+
+			//思路2：越界-修改边界
+			if (end1 >= n)
+			{
+				end1 = n - 1;
+				// [begin2,end2]修正为不存在区间
+				begin2 = n;
+				end2 = n - 1;
+			}
+			else if (end2 >= n)
+			{
+				// [begin2,end2]修正为不存在区间
+				begin2 = n;
+				end2 = n - 1;
+			}
+			else if (end2 >= n)
+			{
+				end2 = n - 1;
+			}
+
+			printf("[%d, %d] [%d, %d]--", begin1, end1, begin2, end2);
+
+			int m = end2 - begin1 + 1;
+			int j = begin1;
+			while (begin1 <= end1 && begin2 <= end2)
+			{
+				if (a[begin1] < a[begin2])
+				{
+					tmp[j++] = a[begin1++];
+				}
+				else
+				{
+					tmp[j++] = a[begin2++];
+				}
+			}
+
+			while (begin1 <= end1)
+			{
+				tmp[j++] = a[begin1++];
+			}
+
+			while (begin2 <= end2)
+			{
+				tmp[j++] = a[begin2++];
+			}
+
+			memcpy(a + i, tmp + i, sizeof(int) * m);
+		}
+		printf("\n");
+		gap *= 2;
+	 } 
+	free(tmp);
+}
+
+//计数排序
+//1、统计每个数据出现的次数
+//2、排序（按出现次数写回原数组）
+//局限性：
+//1、如果是浮点数，字符串就不适用了
+//2、如果数据范围很大，空间复杂度就会很高，相对不适合
+//适合范围集中，重复数据多
+
+void CountSort(int* a, int n)
+{
+	int min = a[0], max = a[0];
+	for (int i = 1; i < n; ++i)
+	{
+		if (a[i] < min)
+			min = a[i];
+
+		if (a[i] > max)
+			max = a[i];
+	}
+
+	//统计次数的数组
+	int range = max - min + 1;
+	int* count = (int*)malloc(sizeof(int) * range);
+	if (count == NULL)
+	{
+		printf("malloc fail\n");
+		exit(-1);
+	}
+	memset(count, 0, sizeof(int) * range);
+
+	//统计次数
+	for (int i = 0; i < n; ++i)
+	{
+		count[a[i] - min]++;
+	}
+
+	//回写-排序
+	int j = 0;
+	for (int i = 0; i < range; ++i)
+	{
+		//出现几次就回写几个i+min
+		while (count[i]--)
+		{
+			a[j++] = i + min;
+		}
+	}
+}
+
+//时间复杂度：O(max(range,N))
+//空间复杂度：O(N)
